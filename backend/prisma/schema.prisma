@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id          Int      @id @default(autoincrement())
+  name        String
+  email       String   @unique
+  cpf         String   @unique
+  position    String
+  department  String
+  hireDate    DateTime @default(now())
+  status      String   @default("Pendente") // OK, Pendente, Alerta
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Campos relacionados a férias
+  lastVacationEndDate    DateTime?
+  vacationDaysAvailable  Int       @default(30)
+  currentAcquisitivePeriodStart DateTime @default(now())
+  unjustifiedAbsences    Int       @default(0) // Novo campo para faltas injustificadas
+
+  documents   Document[]
+  vacations   Vacation[]
+
+  @@map("employees")
+}
+
+model Document {
+  id          Int      @id @default(autoincrement())
+  employeeId  Int
+  docType     String   // Ex: Contrato, ASO, Recibo, Aviso de Férias
+  fileName    String
+  filePath    String
+  uploadDate  DateTime @default(now())
+  dueDate     DateTime? // Para documentos com vencimento
+  status      String   @default("OK") // OK, Vencido, Pendente
+  category    String   // Admissão, Dia a Dia, Férias, Desligamento, Outros
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("user") // user, admin
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Vacation {
+  id          Int      @id @default(autoincrement())
+  employeeId  Int
+  startDate   DateTime
+  endDate     DateTime
+  days        Int
+  type        String   // "Total", "Parcial"
+  status      String   @default("Pendente") // Pendente, Aprovada, Rejeitada, Cancelada
+  requestDate DateTime @default(now())
+  approvedBy  String?
+  approvedAt  DateTime?
+  rejectedReason String?
+  isAbonoPecuniario Boolean @default(false) // Se vendeu 1/3 das férias
+  abonoDays   Int?     // Quantos dias foram vendidos
+  acquisitivePeriodStart DateTime // Corrigido o nome do campo
+  acquisitivePeriodEnd   DateTime // Corrigido o nome do campo
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("vacations")
+}
+
+
+
+
